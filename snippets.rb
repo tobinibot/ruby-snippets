@@ -79,3 +79,78 @@ class Numeric
   end
   alias_method :reduce, :reduce_by
 end
+
+# ---------
+
+#   @person ? @person.name : nil
+# vs
+#   @person.try(:name)
+class Object
+  def try(method)
+    send method if respond_to? method
+  end
+end
+
+# ----------
+
+class Percentage    
+  def chance
+    Chance.new(self)
+  end
+  
+  class Chance
+    attr_reader :odds, :happens
+    alias :happens? :happens
+    
+    def initialize(percent)
+      @odds    = percent.amount
+      @happens = @odds > Kernel.rand(100)
+    end
+    
+    def of(&block)
+      yield if happens?
+    end
+  end
+end
+
+module Kernel
+  def maybe(percent = 50.percent, &block)
+    if block_given?
+      percent.chance.of &block
+    else
+      percent.chance.happens?
+    end
+  end
+  
+  def probably(&block)
+    80.percent.chance.of &block
+  end
+
+  def rarely(&block)
+    20.percent.chance.of &block
+  end
+end
+
+# -----------
+
+module Kernel
+  def probably
+    yield if (0...8).include? Kernel.rand(10)
+  end
+
+  def rarely 
+    yield if (0...2).include? Kernel.rand(10)
+  end
+end
+
+1_000_000.times do
+  probably do
+    good
+  end
+  rarely do
+    evil
+  end
+end
+
+# Good done 799,086 of 1,000,000
+# Evil done 199,662 of 1,000,000
